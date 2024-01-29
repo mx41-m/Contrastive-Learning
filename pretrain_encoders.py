@@ -50,7 +50,7 @@ class RoPEMultiHeadAttention(nn.Module):
         self.key_proj = nn.Linear(d_model, self.d_head * num_heads)
         self.value_proj = nn.Linear(d_model, self.d_head * num_heads)
         self.output_proj = nn.Linear(self.d_head * num_heads, d_model, bias=True)
-	    self.layernorm = nn.LayerNorm(d_model)
+        self.layernorm = nn.LayerNorm(d_model)
     
     def RoPE(self, x, rope_per): ### input x shape is [seq_len, batch_size, n_heads, d]
         d = int(rope_per * self.d_head)
@@ -87,7 +87,7 @@ class RoPEMultiHeadAttention(nn.Module):
         context = F.scaled_dot_product_attention(query,key,value, attn_mask, dropout_p, is_causal)
         context = context.view(self.num_heads, batch_size, -1, self.d_head)
         context = context.permute(1, 2, 0, 3).contiguous().view(batch_size, -1, self.num_heads * self.d_head)
-	    context = self.layernorm(context + x)
+        context = self.layernorm(context + x)
         
         context = self.output_proj(context) + context
         return context
@@ -382,13 +382,13 @@ if __name__ == "__main__":
     train_data1_feats, train_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['train']['data1'], all_data['train']['data2'], all_data['train']['label'],
                                                                     all_data['train']['id'], all_data['train']['timestamp'])
 
-	val_data1_feats, val_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['val']['data1'], all_data['val']['data2'], all_data['val']['label'],
+    val_data1_feats, val_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['val']['data1'], all_data['val']['data2'], all_data['val']['label'],
                                                                 all_data['val']['id'], all_data['val']['timestamp'])
 
-	test_data1_feats, test_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['test']['data1'], all_data['test']['data2'], all_data['test']['label'],
+    test_data1_feats, test_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['test']['data1'], all_data['test']['data2'], all_data['test']['label'],
                                                                   all_data['test']['id'], all_data['test']['timestamp'])
-	
-	torch.save(
+
+    torch.save(
 		{'encoder1': pre_encoders.encoder1.state_dict(),
      		'encoder2': pre_encoders.encoder2.state_dict(),
      		'train_feat': {'data1': train_data1_feats, 'data2': train_data2_feats},
