@@ -137,14 +137,14 @@ if __name__ == "__main__":
     norm_val_dataset1, norm_val_dataset2 = [], []
     val_labels = []
     for idx in tqdm(val_idx):
-    	norm_data = [mnist_transform(item) for item in generate_data['data'][idx][:final_len[idx]]]
+    	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
     	norm_val_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
     	norm_val_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
 
     norm_test_dataset1, norm_test_dataset2 = [], []
     test_labels = []
     for idx in tqdm(test_idx):
-    	norm_data = [mnist_transform(item) for item in generate_data['data'][idx][:final_len[idx]]]
+    	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
     	norm_test_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
     	norm_test_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
     
