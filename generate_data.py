@@ -129,21 +129,21 @@ if __name__ == "__main__":
     
     norm_train_dataset1, norm_train_dataset2 = [], []
     train_labels = []
-    for idx in tqdm(train_idx):
+    for idx in tqdm(train_idxs):
        	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
        	norm_train_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
        	norm_train_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
     
     norm_val_dataset1, norm_val_dataset2 = [], []
     val_labels = []
-    for idx in tqdm(val_idx):
+    for idx in tqdm(val_idxs):
     	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
     	norm_val_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
     	norm_val_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
 
     norm_test_dataset1, norm_test_dataset2 = [], []
     test_labels = []
-    for idx in tqdm(test_idx):
+    for idx in tqdm(test_idxs):
     	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
     	norm_test_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
     	norm_test_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
