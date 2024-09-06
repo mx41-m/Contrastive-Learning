@@ -92,25 +92,28 @@ if __name__ == "__main__":
                bottom = top  + digit_size ### one image size is 28 x 28
                right  = left + digit_size ### one image size 28 x 28
                generate_data[j, i, top:bottom, left:right], generate_event[j, i] = Overlap(generate_data[j, i, top:bottom, left:right], digit_image)
-               generate_data[j, i] += np.random.normal(0,10,(image_size, image_size)) ### adding noise
-
+    
+    for j in tqdm(range(total_nums)):
+        for i in range(length):
+            generate_data[j, i] += np.random.normal(0,10,(image_size, image_size)) ### adding noise
+    
     ### cut sequence and simulate censoring
     cut_idxs = []
     for label in generate_event:
-	label_diff = np.diff(label)
-	if 1 in label_diff:
-	   cut_idxs.append(np.where(label_diff == 1)[0][0] + 1)
+        label_diff = np.diff(np.append([0], label))
+        if 1 in label_diff:
+           cut_idxs.append(np.where(label_diff == 1)[0][0] + 1)
         else:
            cut_idxs.append(len(label))
     
     censor_indicator = np.random.choice(2, len(cut_idxs), p=[0.85, 0.15])
     final_len = []
     for i, item in enumerate(cut_idxs):
-	if censor_indicator[i]:
-           if item > 1:
-              final_len.append(np.random.randint(1, item, 1)[0])
-           else:
-              final_len.append(item)
+        if censor_indicator[i]:
+            if item > 1:
+                final_len.append(np.random.randint(1, item, 1)[0])
+            else:
+                final_len.append(item)
         else:
            final_len.append(item)
     
@@ -130,33 +133,36 @@ if __name__ == "__main__":
     norm_train_dataset1, norm_train_dataset2 = [], []
     train_labels = []
     for idx in tqdm(train_idxs):
-       	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
-       	norm_train_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
-       	norm_train_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
-    
+        norm_train_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
+        norm_train_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_train_data])
+       	norm_train_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_train_data])
+        train_labels.append(generate_event[idx][:final_len[idx]])
+ 
     norm_val_dataset1, norm_val_dataset2 = [], []
     val_labels = []
     for idx in tqdm(val_idxs):
-    	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
-    	norm_val_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
-    	norm_val_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
+        norm_val_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
+        norm_val_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_val_data])
+        norm_val_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_val_data])
+        val_labels.append(generate_event[idx][:final_len[idx]])
 
     norm_test_dataset1, norm_test_dataset2 = [], []
     test_labels = []
     for idx in tqdm(test_idxs):
-    	norm_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
-    	norm_test_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_data])
-    	norm_test_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_data])
-    
+        norm_test_data = [mnist_transform(item) for item in generate_data[idx][:final_len[idx]]]
+        norm_test_dataset1.append([item.squeeze()[:resize_size//2,:].flatten() for item in norm_test_data])
+        norm_test_dataset2.append([item.squeeze()[resize_size//2:,:].flatten() for item in norm_test_data])
+        test_labels.append(generate_event[idx][:final_len[idx]])        
+
     train_timestamps = [np.arange(len(item)) for item in train_labels]
     val_timestamps = [np.arange(len(item)) for item in val_labels]
     test_timestamps = [np.arange(len(item)) for item in test_labels] 
     
     with open(args.generate_data_path + 'generate_data.pkl', 'wb') as f:
-    pickle.dump({
-        'train': {'data1': norm_train_dataset1, 'data2': norm_train_dataset2, 'label': train_labels, 'timestamp': train_timestamps, 'id': train_idx},
-        'val': {'data1': norm_val_dataset1, 'data2': norm_val_dataset2, 'label':val_labels, 'timestamp': val_timestamps, 'id': val_idx},
-        'test': {'data1': norm_test_dataset1, 'data2': norm_test_dataset2, 'label': test_labels, 'timestamp': test_timestamps, 'id': test_idx},
-    }, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump({
+            'train': {'data1': norm_train_dataset1, 'data2': norm_train_dataset2, 'label': train_labels, 'timestamp': train_timestamps, 'id': train_idxs},
+            'val': {'data1': norm_val_dataset1, 'data2': norm_val_dataset2, 'label':val_labels, 'timestamp': val_timestamps, 'id': val_idxs},
+            'test': {'data1': norm_test_dataset1, 'data2': norm_test_dataset2, 'label': test_labels, 'timestamp': test_timestamps, 'id': test_idxs},
+        }, f, protocol=pickle.HIGHEST_PROTOCOL)
      
     

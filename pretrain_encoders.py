@@ -5,6 +5,7 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 from datetime import datetime
 import random
+import lifelines
 
 import torch
 import torch.nn as nn
@@ -70,7 +71,7 @@ class RoPEMultiHeadAttention(nn.Module):
         x_rope = (x_rope * cos_cached[:x.shape[0]]) + (neg_half_x * sin_cached[:x.shape[0]])
         return torch.cat((x_rope, x_pass), dim=-1)
         
-    def forward(self, query, key, value, attn_mask=None, dropout_p=0.0, is_causal=True) -> Tensor:
+    def forward(self, x, query, key, value, attn_mask=None, dropout_p=0.0, is_causal=True) -> Tensor:
         batch_size = value.size(0)
         
         query = self.query_proj(query).view(batch_size, -1, self.num_heads, self.d_head)
@@ -158,7 +159,7 @@ class AttentionCPCCL:
         self.encoder2 = RoPEAttenEncoder(feat2_dim, attn2_layers, attn2_d_model, attn2_num_heads)
         
         self.cpc_steps = cpc_steps
-	    self.cpc_k = cpc_k
+        self.cpc_k = cpc_k
         self.cpcout_proj1 = nn.ModuleList(
             [nn.Linear(in_features=attn1_d_model, out_features=attn2_d_model, bias=True) for i in range(self.cpc_steps)]
         )
@@ -239,7 +240,7 @@ class AttentionCPCCL:
         for i in range(1, self.cpc_steps+1):
             for k, t_sample in enumerate(t_samples[t_samples_mask]):
                 encode_samples1[k, i-1, :] = batch_embs1[t_samples_mask][k, t_sample + i + (self.cpc_k - 1), :]
-        
+
         c_t1 = torch.empty((sum(t_samples_mask), batch_embs1.shape[-1])).float()
         for k, t_sample in enumerate(t_samples[t_samples_mask]):
             c_t1[k] = batch_embs1[t_samples_mask][k, t_sample, :] ### size is batch_size * 1 * emb_dim
@@ -256,8 +257,8 @@ class AttentionCPCCL:
         encode_samples2 = torch.empty((sum(t_samples_mask), self.cpc_steps, batch_embs2.shape[-1])).float()
         for i in range(1, self.cpc_steps+1):
             for k, t_sample in enumerate(t_samples[t_samples_mask]):
-                encode_samples2[k, i-1, :] = batch_embs2[t_samples_mask][k, t_samplei + i + (self.cpc_k - 1), :]
-        
+                encode_samples2[k, i-1, :] = batch_embs2[t_samples_mask][k, t_sample + i + (self.cpc_k - 1), :]                
+
         c_t2 = torch.empty((sum(t_samples_mask), batch_embs2.shape[-1])).float()
         for k, t_sample in enumerate(t_samples[t_samples_mask]):
             c_t2[k] = batch_embs2[t_samples_mask][k, t_sample, :] 
@@ -353,31 +354,32 @@ def CL_get_encoded_feats(cl_model, extracted_data1, extracted_data2, extracted_l
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
-    parser.add_argument('--generate_data_path', help='The directory for saving generate data', type=str, default='./generate_data/')	
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--generate_data_path', help='The directory for saving generate data', type=str, default='./generate_data/')
     parser.add_argument('--encoders_res', help='The directory for saving pretrained encoders and the generate features', type=str, default='./encoders_res/')
-	
-	args = parser.parse_args()
-	with open(args.generate_data_path + 'generate_data.pkl', 'rb') as f:
-		all_data = pickle.load(f) 
-	
-	pre_encoders = AttentionCPCCL(
-		feat1_dim = 1024 // 2, feat2_dim = 1024 // 2,
-    		device='cuda:0', 
-    		CL_temp=0.1,
-    		attn1_layers=2, attn1_d_model=512, attn1_num_heads=4,
-    		attn2_layers=2, attn2_d_model=512, attn2_num_heads=4,
-    		cpc_steps=1, cpc_k = 12,
-		    window_size = 2,
-	)
-	pre_encoders.CLtrain(
-    		all_data['train']['data1'], all_data['train']['data2'], all_data['train']['label'], 
-    		all_data['train']['id'], 
-    		all_data['train']['timestamp'],
-    		attn1_mask=None, attn1_dropout_p=0.2, attn1_is_causal=True, 
-    		attn2_mask=None, attn2_dropout_p=0.2, attn2_is_causal=True, 
-    		batch_size=64, max_epochs=50, learning_rate=1e-4
-	)
+
+    args = parser.parse_args()
+    print('Begin Load Dataset')
+    with open(args.generate_data_path + 'generate_data.pkl', 'rb') as f:
+        all_data = pickle.load(f) 
+    print('Finish Load Dataset')	
+    pre_encoders = AttentionCPCCL(
+            feat1_dim = 1024 // 2, feat2_dim = 1024 // 2,
+            device='cuda:0', 
+            CL_temp=0.1,
+            attn1_layers=2, attn1_d_model=512, attn1_num_heads=4,
+            attn2_layers=2, attn2_d_model=512, attn2_num_heads=4,
+            cpc_steps=1, cpc_k = 12,
+            window_size = 2,
+    )
+    pre_encoders.CLtrain(
+            all_data['train']['data1'], all_data['train']['data2'], all_data['train']['label'], 
+            all_data['train']['id'], 
+            all_data['train']['timestamp'],
+            attn1_mask=None, attn1_dropout_p=0.2, attn1_is_causal=True, 
+            attn2_mask=None, attn2_dropout_p=0.2, attn2_is_causal=True, 
+            batch_size=64, max_epochs=50, learning_rate=1e-4
+    )
 
     train_data1_feats, train_data2_feats = CL_get_encoded_feats(pre_encoders, all_data['train']['data1'], all_data['train']['data2'], all_data['train']['label'],
                                                                     all_data['train']['id'], all_data['train']['timestamp'])
