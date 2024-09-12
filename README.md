@@ -6,5 +6,5 @@ To install the environment, run "conda env create -f requirements.yml".
 
 # Running an experiment
 To run the experiment on Toy Moving Mnist:
-You need first generate the moving mnist dataset: "python generate_data.py --data_path MNIST_dataset_path --generate_data_path Moving_MNIST_save_path"
-Then you could pretrain encoders: "python pretrain_encoders.py --generate_data_path Moving_MNIST_save_path --encoders_res encoders_results_generate_features_save_path"
+1. First generate the moving mnist dataset: "python generate_data.py --data_path MNIST_dataset_path --generate_data_path Moving_MNIST_save_path"
+2. Pretrain encoders: "python pretrain_encoders.py --generate_data_path Moving_MNIST_save_path --encoders_res encoders_results_generate_features_save_path"
