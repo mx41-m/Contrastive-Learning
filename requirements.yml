@@ -1,0 +1,18 @@
+name: CL
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - pytorch
+  - pytorch-cuda=12.1
+  - torchaudio
+  - torchvision
+  - pip
+  - pip:
+    - matplotlib 
+    - tqdm
+    - scikit-learn
+    - lifelines
